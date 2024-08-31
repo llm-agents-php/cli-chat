@@ -1,0 +1,34 @@
+{
+  "name": "llm-agents/cli-chat",
+  "description": "A simple CLI chat application",
+  "license": "MIT",
+  "require": {
+    "php": "^8.2",
+    "symfony/console": "^7.0",
+    "ramsey/uuid": "^4.0",
+    "llm-agents/agents": "^1.0",
+    "llm-agents/openai-client": "^1.0",
+    "llm-agents/json-schema-mapper": "^1.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "LLM\\Agents\\Chat\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "LLM\\Tests\\": "tests/src"
+    }
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": false
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
