@@ -57,7 +57,7 @@ final class ChatSession
         $this->io->block(\array_merge($sessionInfo, [
             'Run the following command to see the AI response',
             \str_repeat('-', \strlen($message)),
-            \sprintf('php app.php chat:session %s -v', $this->sessionUuid),
+            $message,
         ]), style: 'info', padding: true);
 
         while (true) {
