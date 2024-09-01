@@ -34,7 +34,7 @@ final class ChatSession
         $this->cursor = new Cursor($output);
     }
 
-    public function run(UuidInterface $accountUuid): void
+    public function run(UuidInterface $accountUuid, string $binPath = 'app.php'): void
     {
         $agent = $this->selectAgent();
 
@@ -52,7 +52,7 @@ final class ChatSession
             ];
         }
 
-        $message = \sprintf('php app.php chat:session %s -v', $this->sessionUuid);
+        $message = \sprintf('php %s chat:session %s -v', $binPath, $this->sessionUuid);
 
         $this->io->block(\array_merge($sessionInfo, [
             'Run the following command to see the AI response',
