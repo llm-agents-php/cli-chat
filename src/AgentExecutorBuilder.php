@@ -11,6 +11,8 @@ use LLM\Agents\LLM\OptionsFactoryInterface;
 use LLM\Agents\LLM\OptionsInterface;
 use LLM\Agents\LLM\Prompt\Chat\MessagePrompt;
 use LLM\Agents\LLM\Prompt\Chat\Prompt;
+use LLM\Agents\LLM\Prompt\Context;
+use LLM\Agents\LLM\PromptContextInterface;
 use LLM\Agents\OpenAI\Client\Option;
 use LLM\Agents\OpenAI\Client\StreamChunkCallbackInterface;
 
@@ -18,7 +20,7 @@ final class AgentExecutorBuilder
 {
     private ?Prompt $prompt = null;
     private ?string $agentKey = null;
-    private array $sessionContext = [];
+    private PromptContextInterface $promptContext;
     private OptionsInterface $options;
 
     public function __construct(
@@ -26,6 +28,7 @@ final class AgentExecutorBuilder
         OptionsFactoryInterface $optionsFactory,
     ) {
         $this->options = $optionsFactory->create();
+        $this->promptContext = new Context();
     }
 
     public function withStreamChunkCallback(StreamChunkCallbackInterface $callback): self
@@ -44,6 +47,11 @@ final class AgentExecutorBuilder
         return $self;
     }
 
+    public function getPrompt(): ?Prompt
+    {
+        return $this->prompt;
+    }
+
     public function withAgentKey(string $agentKey): self
     {
         $self = clone $this;
@@ -52,12 +60,17 @@ final class AgentExecutorBuilder
         return $self;
     }
 
-    public function withSessionContext(array $sessionContext): self
+    public function withPromptContext(PromptContextInterface $context): self
     {
         $self = clone $this;
-        $self->sessionContext = $sessionContext;
+        $self->promptContext = $context;
 
         return $self;
+    }
+
+    public function getPromptContext(): PromptContextInterface
+    {
+        return $this->promptContext;
     }
 
     public function withMessage(MessagePrompt $message): self
@@ -89,7 +102,7 @@ final class AgentExecutorBuilder
             agent: $this->agentKey,
             prompt: $prompt,
             options: $this->options,
-            sessionContext: $this->sessionContext,
+            promptContext: $this->promptContext,
         );
 
         $this->prompt = $execution->prompt;
@@ -107,7 +120,7 @@ final class AgentExecutorBuilder
             agent: $this->agentKey,
             prompt: $this->prompt,
             options: $this->options,
-            sessionContext: $this->sessionContext,
+            promptContext: $this->promptContext,
         );
 
         $this->prompt = $execution->prompt;
@@ -118,10 +131,5 @@ final class AgentExecutorBuilder
     public function __clone()
     {
         $this->prompt = null;
-    }
-
-    public function getPrompt(): ?Prompt
-    {
-        return $this->prompt;
     }
 }

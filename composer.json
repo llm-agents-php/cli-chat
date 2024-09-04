@@ -7,7 +7,7 @@
     "symfony/console": "^7.0",
     "psr/event-dispatcher": "^1.0",
     "ramsey/uuid": "^4.0",
-    "llm-agents/agents": "^1.0",
+    "llm-agents/agents": "^1.2",
     "llm-agents/openai-client": "^1.0",
     "llm-agents/json-schema-mapper": "^1.0"
   },
