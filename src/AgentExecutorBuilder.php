@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace LLM\Agents\Chat;
 
-use LLM\Agents\Agent\AgentExecutor;
 use LLM\Agents\Agent\Exception\InvalidBuilderStateException;
 use LLM\Agents\Agent\Execution;
+use LLM\Agents\AgentExecutor\ExecutorInterceptorInterface;
+use LLM\Agents\AgentExecutor\ExecutorInterface;
 use LLM\Agents\LLM\OptionsFactoryInterface;
 use LLM\Agents\LLM\OptionsInterface;
 use LLM\Agents\LLM\Prompt\Chat\MessagePrompt;
@@ -22,9 +23,11 @@ final class AgentExecutorBuilder
     private ?string $agentKey = null;
     private PromptContextInterface $promptContext;
     private OptionsInterface $options;
+    /** @var ExecutorInterceptorInterface[] */
+    private array $interceptors = [];
 
     public function __construct(
-        private readonly AgentExecutor $executor,
+        private readonly ExecutorInterface $executor,
         OptionsFactoryInterface $optionsFactory,
     ) {
         $this->options = $optionsFactory->create();
@@ -84,6 +87,15 @@ final class AgentExecutorBuilder
         return $this;
     }
 
+    public function withInterceptor(ExecutorInterceptorInterface ...$interceptors): self
+    {
+        $self = clone $this;
+
+        $self->interceptors = \array_merge($this->interceptors, $interceptors);
+
+        return $this;
+    }
+
     public function ask(string|\Stringable $prompt): Execution
     {
         if ($this->agentKey === null) {
@@ -98,12 +110,14 @@ final class AgentExecutorBuilder
             );
         }
 
-        $execution = $this->executor->execute(
-            agent: $this->agentKey,
-            prompt: $prompt,
-            options: $this->options,
-            promptContext: $this->promptContext,
-        );
+        $execution = $this->executor
+            ->withInterceptor(...$this->interceptors)
+            ->execute(
+                agent: $this->agentKey,
+                prompt: $prompt,
+                options: $this->options,
+                promptContext: $this->promptContext,
+            );
 
         $this->prompt = $execution->prompt;
 
@@ -116,12 +130,14 @@ final class AgentExecutorBuilder
             throw new InvalidBuilderStateException('Agent key is required');
         }
 
-        $execution = $this->executor->execute(
-            agent: $this->agentKey,
-            prompt: $this->prompt,
-            options: $this->options,
-            promptContext: $this->promptContext,
-        );
+        $execution = $this->executor
+            ->withInterceptor(...$this->interceptors)
+            ->execute(
+                agent: $this->agentKey,
+                prompt: $this->prompt,
+                options: $this->options,
+                promptContext: $this->promptContext,
+            );
 
         $this->prompt = $execution->prompt;
 
