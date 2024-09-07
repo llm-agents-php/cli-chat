@@ -36,9 +36,31 @@ final class ChatHistory
         $this->io = new ChatStyle($input, $output);
     }
 
-    public function run(UuidInterface $sessionUuid): void
+    public function run(?UuidInterface $sessionUuid = null): void
     {
-        $this->sessionUuid = $sessionUuid;
+        if ($sessionUuid === null) {
+            $latestSessions = $this->chat->getLatestSessions();
+            if (empty($latestSessions)) {
+                throw new SessionNotFoundException('No active session found.');
+            }
+
+            $choices = [];
+            foreach ($latestSessions as $session) {
+                $choices[$session->getUuid()->toString()] = $session->getDescription() ?? $session->getAgentName();
+            }
+
+            $sessionUuid = $this->io->choice(
+                'Select chat session',
+                $choices,
+                $choices[\array_key_first($choices)],
+            );
+        }
+
+        $this->sessionUuid = $sessionUuid ?? $this->chat->getLatestSession()?->getUuid();
+
+        if ($this->sessionUuid === null) {
+            throw new SessionNotFoundException('No active session found.');
+        }
 
         $this->io->write("\033\143");
 
