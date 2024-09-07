@@ -13,6 +13,7 @@ use LLM\Agents\Chat\Event\ToolCall;
 use LLM\Agents\Chat\Event\ToolCallResult;
 use LLM\Agents\Chat\Exception\ChatNotFoundException;
 use LLM\Agents\Chat\Exception\SessionNotFoundException;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -54,9 +55,11 @@ final class ChatHistory
                 $choices,
                 $choices[\array_key_first($choices)],
             );
+
+            $sessionUuid = Uuid::fromString($sessionUuid);
         }
 
-        $this->sessionUuid = $sessionUuid ?? $this->chat->getLatestSession()?->getUuid();
+        $this->sessionUuid = $sessionUuid;
 
         if ($this->sessionUuid === null) {
             throw new SessionNotFoundException('No active session found.');

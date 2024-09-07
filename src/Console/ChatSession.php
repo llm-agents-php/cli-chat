@@ -36,11 +36,46 @@ final class ChatSession
 
     public function run(UuidInterface $accountUuid, string $binPath = 'app.php', bool $openLatest = false): void
     {
-        $agent = $this->selectAgent();
+        // Open the latest session if it exists
+        $isExistingSession = false;
+
+        if ($openLatest) {
+            $session = $this->chat->getLatestSession();
+            if ($session) {
+                $this->sessionUuid = $session->getUuid();
+                $agent = $this->agents->get($session->getAgentName());
+                $isExistingSession = true;
+            }
+        }
+
+        if (!$isExistingSession) {
+            $agent = $this->selectAgent();
+            $this->sessionUuid = $this->chat->startSession(
+                accountUuid: $accountUuid,
+                agentName: $agent->getKey(),
+            );
+        }
 
         $getCommand = $this->getCommand($agent);
 
-        $this->initSession($openLatest, $accountUuid, $agent, $binPath);
+        $sessionInfo = [];
+        if ($this->io->isVerbose()) {
+            $sessionInfo = [
+                \sprintf(
+                    'Session %s with UUID: %s',
+                    $isExistingSession ? 'opened' : 'started',
+                    $this->sessionUuid,
+                ),
+            ];
+        }
+
+        $message = \sprintf('php %s chat:session %s -v', $binPath, $this->sessionUuid);
+
+        $this->io->block(\array_merge($sessionInfo, [
+            'Run the following command to see the AI response',
+            \str_repeat('-', \strlen($message)),
+            $message,
+        ]), style: 'info', padding: true);
 
         while (true) {
             $message = $getCommand();
@@ -145,48 +180,5 @@ final class ChatSession
 
             return $initialPrompt;
         };
-    }
-
-    public function initSession(
-        bool $openLatest,
-        UuidInterface $accountUuid,
-        AgentInterface $agent,
-        string $binPath,
-    ): void {
-        // Open the latest session if it exists
-        $isExistingSession = false;
-        if ($openLatest) {
-            $session = $this->chat->getLatestSession();
-            if ($session) {
-                $this->sessionUuid = $session->getUuid();
-                $isExistingSession = true;
-            }
-        }
-
-        if (!$isExistingSession) {
-            $this->sessionUuid = $this->chat->startSession(
-                accountUuid: $accountUuid,
-                agentName: $agent->getKey(),
-            );
-        }
-
-        $sessionInfo = [];
-        if ($this->io->isVerbose()) {
-            $sessionInfo = [
-                \sprintf(
-                    'Session %s with UUID: %s',
-                    $isExistingSession ? 'opened' : 'started',
-                    $this->sessionUuid,
-                ),
-            ];
-        }
-
-        $message = \sprintf('php %s chat:session %s -v', $binPath, $this->sessionUuid);
-
-        $this->io->block(\array_merge($sessionInfo, [
-            'Run the following command to see the AI response',
-            \str_repeat('-', \strlen($message)),
-            $message,
-        ]), style: 'info', padding: true);
     }
 }
