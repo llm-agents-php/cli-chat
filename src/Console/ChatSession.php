@@ -56,6 +56,18 @@ final class ChatSession
             );
         }
 
+        $this->io->title($agent->getName());
+
+        // split the description into multiple lines by 200 characters
+        $this->io->block(\wordwrap($agent->getDescription(), 200, "\n", true));
+
+        $rows = [];
+        foreach ($agent->getTools() as $tool) {
+            $tool = $this->tools->get($tool->name);
+            $rows[] = [$tool->name, \wordwrap($tool->description, 70, "\n", true)];
+        }
+        $this->io->table(['Tool', 'Description'], $rows);
+
         $getCommand = $this->getCommand($agent);
 
         $sessionInfo = [];
@@ -122,17 +134,6 @@ final class ChatSession
                 $this->cursor->clearOutput();
 
                 $agent = $this->agents->get($agentName);
-                $this->io->title($agent->getName());
-
-                // split the description into multiple lines by 200 characters
-                $this->io->block(\wordwrap($agent->getDescription(), 200, "\n", true));
-
-                $rows = [];
-                foreach ($agent->getTools() as $tool) {
-                    $tool = $this->tools->get($tool->name);
-                    $rows[] = [$tool->name, \wordwrap($tool->description, 70, "\n", true)];
-                }
-                $this->io->table(['Tool', 'Description'], $rows);
 
                 break;
             }

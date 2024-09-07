@@ -53,7 +53,7 @@ final class ChatHistory
             $sessionUuid = $this->io->choice(
                 'Select chat session',
                 $choices,
-                $choices[\array_key_first($choices)],
+                \array_key_first($choices),
             );
 
             $sessionUuid = Uuid::fromString($sessionUuid);
