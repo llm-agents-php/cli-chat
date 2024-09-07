@@ -34,21 +34,50 @@ final class ChatSession
         $this->cursor = new Cursor($output);
     }
 
-    public function run(UuidInterface $accountUuid, string $binPath = 'app.php'): void
+    public function run(UuidInterface $accountUuid, string $binPath = 'app.php', bool $openLatest = false): void
     {
-        $agent = $this->selectAgent();
+        // Open the latest session if it exists
+        $isExistingSession = false;
+
+        if ($openLatest) {
+            $session = $this->chat->getLatestSession();
+            if ($session) {
+                $this->sessionUuid = $session->getUuid();
+                $agent = $this->agents->get($session->getAgentName());
+                $isExistingSession = true;
+            }
+        }
+
+        if (!$isExistingSession) {
+            $agent = $this->selectAgent();
+            $this->sessionUuid = $this->chat->startSession(
+                accountUuid: $accountUuid,
+                agentName: $agent->getKey(),
+            );
+        }
+
+        $this->io->title($agent->getName());
+
+        // split the description into multiple lines by 200 characters
+        $this->io->block(\wordwrap($agent->getDescription(), 200, "\n", true));
+
+        $rows = [];
+        foreach ($agent->getTools() as $tool) {
+            $tool = $this->tools->get($tool->name);
+            $rows[] = [$tool->name, \wordwrap($tool->description, 70, "\n", true)];
+        }
+        $this->io->table(['Tool', 'Description'], $rows);
 
         $getCommand = $this->getCommand($agent);
-
-        $this->sessionUuid = $this->chat->startSession(
-            accountUuid: $accountUuid,
-            agentName: $agent->getKey(),
-        );
 
         $sessionInfo = [];
         if ($this->io->isVerbose()) {
             $sessionInfo = [
-                \sprintf('Session started with UUID: %s', $this->sessionUuid),
+                \sprintf(
+                    'Session %s with UUID: %s',
+                    $isExistingSession ? 'opened' : 'started',
+                    $this->sessionUuid,
+                ),
             ];
         }
 
@@ -74,7 +103,11 @@ final class ChatSession
             }
 
             if (!empty($message)) {
-                $this->chat->ask($this->sessionUuid, $message);
+                try {
+                    $this->chat->ask($this->sessionUuid, $message);
+                } catch (\Throwable $e) {
+                    $this->io->error($e->getMessage());
+                }
             } else {
                 $this->io->warning('Message cannot be empty');
             }
@@ -101,17 +134,6 @@ final class ChatSession
                 $this->cursor->clearOutput();
 
                 $agent = $this->agents->get($agentName);
-                $this->io->title($agent->getName());
-
-                // split the description into multiple lines by 200 characters
-                $this->io->block(\wordwrap($agent->getDescription(), 200, "\n", true));
-
-                $rows = [];
-                foreach ($agent->getTools() as $tool) {
-                    $tool = $this->tools->get($tool->name);
-                    $rows[] = [$tool->name, \wordwrap($tool->description, 70, "\n", true)];
-                }
-                $this->io->table(['Tool', 'Description'], $rows);
 
                 break;
             }

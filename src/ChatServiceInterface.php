@@ -16,6 +16,16 @@ interface ChatServiceInterface
      */
     public function getSession(UuidInterface $sessionUuid): SessionInterface;
 
+    public function getLatestSession(): ?SessionInterface;
+
+    /**
+     * Get latest sessions.
+     *
+     * @param int $limit
+     * @return SessionInterface[]
+     */
+    public function getLatestSessions(int $limit = 3): array;
+
     public function updateSession(SessionInterface $session): void;
 
     /**
